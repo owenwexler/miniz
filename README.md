@@ -6,13 +6,17 @@ Mini-Z uses Bun for testing.  This is the only thing Mini-Z uses Bun for as the 
 # Why not just use Zod or Yup?
 Zod and Yup are packages and require package managers and a build step to install.  Mini-Z provides schema validation at the JavaScript level for most use cases in a single-file package that does not need a build step.  Just copy a single file into your project and import it into your Alpine scripts.  
 
+Mini-Z is heavily modeled after Zod but is not an exact copy of Zod.  Think of it as the Preact to Zod's React.
+
 # Stack
 LANGUAGE: JavaScript
 RUNTIME: Bun (for testing only)
 TEST RUNNER: Bun::Test
 
 # Why Mini-Z Uses JavaScript Instead Of TypeScript
-Mini-Z is designed to validate schemas at the business logic-level for stacks centered around AlpineJS, Datastar, and other libraries that do not have a build step or package management where TypeScript may not be supported at the level where this library is used, so Mini-Z stays written in JavaScript for compatibility reasons.  Nonetheless, the type definitions are extensively documented through comments and JSDocs and the whole point of the package is to validate schemas and provide type safety.  We believe in type safety regardless of whether TypeScript is used or not.
+Mini-Z is designed to validate schemas at the JS business logic-level for stacks centered around AlpineJS, Datastar, and other libraries that do not have a build step or package management where TypeScript may not be supported at the level where this library is used, so Mini-Z stays written in JavaScript for compatibility reasons.  Nonetheless, the type definitions are extensively documented through comments and JSDocs and the whole point of the package is to validate schemas and provide type safety.  We believe in type safety regardless of whether TypeScript is used or not.
+
+Schema validation should also be done on the backend in whatever backend language being used (e.g. Go, Python, or whatever), but Mini-Z was made to provide schema validation at the Alpine/Datastar level if needed.
 
 # Setup Instructions
 - Install Bun if you haven't already

@@ -37,6 +37,7 @@ Refer to README.md and CLAUDE.md for a better idea of what Mini-Z is.
 
 The main file is mz.js, which exports an object called mz.
 The tests should import the object as follows.
+```import { mz } from 'mz'```
 
 mz.js is not finished yet.  We want to make development of mz.js test-driven.  All tests should fail on first run and we will make them pass as we develop the library.
 
@@ -71,3 +72,5 @@ const result = mz.parse(obj, schema);
 ```
 
 Please write all tests using the above syntax and test whether the schema or the error object is returned.
+
+Thank you and Godspeed!
