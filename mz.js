@@ -1,10 +1,20 @@
+// --------------------------------------------
+// 1.  Private global variables used by the mz
+// object and its private functions
+// --------------------------------------------
+
 const returnedTypeError = {
   data: null,
   error: errors.typeError
 }
 
+const noError = { data: null, error: null }
+
+// --------------------------------------------
+// 2.  Private functions used by the mz object
+// --------------------------------------------
+
 const validateType = (input, type) {
-  const noError = { data: null, error: null }
   if (type === 'array') {
     return !Array.isArray(input) ? returnedTypeError : noError; 
   }
@@ -49,19 +59,22 @@ const parseString = (input, options) => {
 
   if (minLength) {
     if (input.length < minLength) {
-      return { data: null, error: errors.numberBelowMin }
+      return { data: null, error: errors.stringLengthBelowMin }
     }
   }
 
   if (maxLength) {
     if (input.length > maxLength) {
-      return { data: null, error: errors.numberAboveMax }
+      return { data: null, error: errors.stringLengthAboveMax }
     }
   }
 
   return noError;
 }
 
+// ---------------------------------------------------
+// 3. Main mz object with all functions and properties 
+// ---------------------------------------------------
 export const mz = {
   number: (options) => { // options: { min: number; max: number;}
     return {
@@ -79,8 +92,28 @@ export const mz = {
     return {
       schemaType: 'boolean'
     }
+  },
+  email: () => {
+    return {
+      schemaType: 'email'
+    }
+  },
+  uuid: () => {
+    return {
+      schemaType: 'uuid'
+    }
+  },
+  ulid: () => {
+    return {
+      schemaType: 'ulid'
+    }
   }
 }
+
+// ---------------------------------------------------
+// 4. errors object - error types returned by the mz
+// object and its private internal functions
+// ---------------------------------------------------
 
 const errors = {
   unknownError: {
@@ -118,6 +151,46 @@ const errors = {
     message: 'Number above maximum',
     details: 'An input number was above the maximum number in the schema',
     hint: 'Input a number that is below the maximum.'
+  },
+  stringLengthBelowMin: {
+    code: 'string_length_below_min',
+    message: 'String length below minimum',
+    details: 'An input string length was below the minimum length required in the schema',
+    hint: 'Input a string that is as long or longer than the minimum.'
+  },
+  stringLengthAboveMax: {
+    code: 'string_length_above_max',
+    message: 'String length above maximum',
+    details: 'An input string length was above the maximum length required in the schema',
+    hint: 'Input a string that is as long or longer than the minimum.'
   }
 };
 
+// ---------------------------------------------------
+// 5. Documented type definitions (as comments)
+// ---------------------------------------------------
+
+/*
+Return type:
+
+type DataErrorReturnObject<T> {
+  data: T | null;
+  error: ErrorType | null;
+}
+*/
+/*
+  type ErrorType {
+    code: string;  // the shorthand error code, frontends should use this in error handling primarily
+    message: string; // the longer error message
+    details: string; // detailed description of the error
+    hint: string; // a hint on how to fix the error
+  }
+*/
+
+/*
+mz object type
+
+type MZ {
+  
+}
+*/
