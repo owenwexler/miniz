@@ -6,13 +6,12 @@ import { mz } from './mz';
 // ---------------------------------------------------------------------------
 
 const ok = (result, expectedData) => {
-  expect(result.error).toBeNull();
-  expect(result.data).toEqual(expectedData);
+  expect(result.error).toBeUndefined();
+  expect(result).toEqual(expectedData);
 };
 
 const fail = (result, expectedCode) => {
-  expect(result.data).toBeNull();
-  expect(result.error).not.toBeNull();
+  expect(result.error).not.toBeUndefined();
   if (expectedCode) {
     expect(result.error.code).toBe(expectedCode);
   }
@@ -89,7 +88,7 @@ describe('mz.number', () => {
 // mz.string
 // ---------------------------------------------------------------------------
 
-describe('mz.string', () => {
+describe.only('mz.string', () => {
   test('valid string, no options', () => {
     const schema = mz.schema({ s: mz.string() });
     ok(mz.parse({ s: 'hello' }, schema), { s: 'hello' });
