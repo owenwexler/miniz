@@ -356,7 +356,7 @@ const failure = (error, location, additionalArgs) => {
 }
 
 const validateType = (input, type) => {
-  if (type === 'array') {
+  if (type === 'array' || type === 'enum') {
     return !Array.isArray(input) ? returnedTypeError : noError;
   }
 
@@ -416,7 +416,8 @@ const parseString = (input, options) => {
     }
 
     if (startsWith) {
-      if (input.slice(0, startsWith.length) !== startsWith) {
+      const inputStartsWith = input.slice(0, startsWith.length);
+      if (inputStartsWith !== startsWith) {
         return {
           data: null,
           error: errors.startsWithMismatch
@@ -425,7 +426,8 @@ const parseString = (input, options) => {
     }
 
     if (endsWith) {
-      if (input.slice(input.length - endsWith.length, input.length) !== endsWith) {
+      const inputEndsWith = input.slice(input.length - endsWith.length, input.length);
+      if (inputEndsWith !== endsWith) {
         return {
           data: null,
           error: errors.startsWithMismatch
@@ -446,7 +448,15 @@ const parseString = (input, options) => {
 }
 
 const parseEnum = (input, schemaEnum) => {
+  let result = false;
 
+  for (const item of schemaEnum) {
+    if (item === input) {
+      result = true;
+    }
+  }
+
+  return result ? { data: input, error: null } : { data: null, error: errors.enumMismatch };
 }
 
 const createSchemaFieldObject = (schemaType, options) => {
@@ -460,14 +470,22 @@ const parseField = (field) => {
 
   const { schemaType, input, options } = field;
 
+  const getResult = (response) => {
+    return response.error ? { data: null, error: response.error } : { data: response.data, error: null };
+  }
+
   switch(schemaType) {
     case 'number': {
-      const result = parseNumber(input, options);
-      return result.error ? { data: null, error: result.error } : { data: result.data, error: null };
+      const response = parseNumber(input, options);
+      return getResult(response);
     }
     case 'string': {
-      const result = parseString(input, options);
-      return result.error ? { data: null, error: result.error } : { data: result.data, error: null };
+      const response = parseString(input, options);
+      return getResult(response);
+    }
+    case 'enum': {
+      const response = parseEnum(input, options.values);
+      return getResult(response);
     }
     default:
       return { data: null, error: errors.unknownError };
