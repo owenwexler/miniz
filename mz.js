@@ -484,12 +484,196 @@ const parseEnum = (input, schemaEnum) => {
   return result ? { data: input, error: null } : { data: null, error: errors.enumMismatch };
 }
 
+const parseNullOrUndefined = (input, type) => {
+  if (!['null', 'undefined'].includes(type)) {
+    return returnedTypeError;
+  }
+
+  if (type === 'null') {
+    if (input !== null) {
+      return { data: null, error: errors.typeError}
+    }
+  }
+
+  if (type === 'undefined') {
+    if (input !== undefined) {
+      return { data: null, error: errors.typeError}
+    }
+  }
+
+  return type === 'null' ? { data: null, error: null } : { data: undefined, error: null };
+}
+
+const parseEmail = (email, options) => {
+  if (validateType(email, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // local-part + @ + domain + dot + TLD, no whitespace or extra @ symbols
+  const defaultPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!defaultPattern.test(email)) {
+    return { data: null, error: errors.invalidEmail };
+  }
+
+  if (options && options.pattern) {
+    if (!options.pattern.test(email)) {
+      return { data: null, error: errors.invalidEmail };
+    }
+  }
+
+  return success(email);
+}
+
+const parseUrl = (url, options) => {
+  if (validateType(url, 'string').error) {
+    return returnedTypeError;
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { data: null, error: errors.invalidUrl };
+  }
+
+  if (options && options.protocol) {
+    const expected = options.protocol.endsWith(':') ? options.protocol : `${options.protocol}:`;
+    if (parsed.protocol !== expected) {
+      return { data: null, error: errors.urlProtocolMismatch };
+    }
+  }
+
+  if (options && options.hostname) {
+    if (parsed.hostname !== options.hostname) {
+      return { data: null, error: errors.urlHostnameMismatch };
+    }
+  }
+
+  return success(url);
+}
+
+const parseUUID = (uuid, options) => {
+  if (validateType(uuid, 'string').error) {
+    return returnedTypeError;
+  }
+
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidPattern.test(uuid)) {
+    return { data: null, error: errors.invalidUuid };
+  }
+
+  if (options && options.version) {
+    const expectedVersionDigit = options.version.replace('v', '');
+    if (uuid[14] !== expectedVersionDigit) {
+      return { data: null, error: errors.uuidVersionMismatch };
+    }
+  }
+
+  return success(uuid);
+}
+
+const parseULID = (ulid, options) => {
+  if (validateType(ulid, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // Crockford base32: 0-9 A-H J K M N P-T V-Z (excludes I L O U)
+  const ulidPattern = /^[0-9A-HJKMNP-TV-Z]{26}$/i;
+  if (!ulidPattern.test(ulid)) {
+    return { data: null, error: errors.invalidUlid };
+  }
+
+  return success(ulid);
+}
+
+const parseGUID = (guid, options) => {
+  if (validateType(guid, 'string').error) {
+    return returnedTypeError;
+  }
+
+  const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!guidPattern.test(guid)) {
+    return { data: null, error: errors.invalidGuid };
+  }
+
+  return success(guid);
+}
+
+const parseCUID = (cuid, options) => {
+  if (validateType(cuid, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // starts with 'c', lowercase alphanumeric, minimum 25 chars total
+  const cuidPattern = /^c[a-z0-9]{24,}$/;
+  if (!cuidPattern.test(cuid)) {
+    return { data: null, error: errors.invalidCuid };
+  }
+
+  return success(cuid);
+}
+
+const parseCUID2 = (cuid2, options) => {
+  if (validateType(cuid2, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // starts with a lowercase letter, lowercase alphanumeric only, minimum 24 chars total
+  const cuid2Pattern = /^[a-z][a-z0-9]{23,}$/;
+  if (!cuid2Pattern.test(cuid2)) {
+    return { data: null, error: errors.invalidCuid2 };
+  }
+
+  return success(cuid2);
+}
+
+const parseNanoId = (nanoId, options) => {
+  if (validateType(nanoId, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // 21 chars, URL-safe alphabet: A-Z a-z 0-9 _ -
+  const nanoidPattern = /^[A-Za-z0-9_-]{21}$/;
+  if (!nanoidPattern.test(nanoId)) {
+    return { data: null, error: errors.invalidNanoid };
+  }
+
+  return success(nanoId);
+}
+const parseEmoji = (emoji, options) => {
+  if (validateType(emoji, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // matches one or more emoji grapheme clusters including ZWJ sequences and variation selectors
+  const emojiPattern = /^(\p{Extended_Pictographic}[\p{Emoji_Modifier}️]?(‍\p{Extended_Pictographic}[\p{Emoji_Modifier}️]?)*)+$/u;
+  if (!emojiPattern.test(emoji)) {
+    return { data: null, error: errors.invalidEmoji };
+  }
+
+  return success(emoji);
+}
+
+const parseHex = (hex, options) => {
+  if (validateType(hex, 'string').error) {
+    return returnedTypeError;
+  }
+
+  const hexPattern = /^[0-9a-fA-F]+$/;
+  if (!hexPattern.test(hex)) {
+    return { data: null, error: errors.invalidHex };
+  }
+
+  return success(hex);
+}
+
 const createSchemaFieldObject = (schemaType, options) => {
   return options ? { schemaType, options } : { schemaType, options: null };
 }
 
 const parseField = (field) => {
-  if (!field.schemaType || field.input === undefined) {
+  if (!field.schemaType) {
     return { data: null, error: errors.typeError };
   }
 
@@ -514,6 +698,54 @@ const parseField = (field) => {
     }
     case 'boolean': {
       const response = parseBoolean(input);
+      return getResult(response);
+    }
+    case 'null': {
+      const response = parseNullOrUndefined(input, 'null');
+      return getResult(response);
+    }
+    case 'undefined': {
+      const response = parseNullOrUndefined(input, 'undefined');
+      return getResult(response);
+    }
+    case 'email': {
+      const response = parseEmail(input, options);
+      return getResult(response);
+    }
+    case 'url': {
+      const response = parseUrl(input, options);
+      return getResult(response);
+    }
+    case 'uuid': {
+      const response = parseUUID(input, options);
+      return getResult(response);
+    }
+    case 'ulid': {
+      const response = parseULID(input, options);
+      return getResult(response);
+    }
+    case 'guid': {
+      const response = parseGUID(input, options);
+      return getResult(response);
+    }
+    case 'cuid': {
+      const response = parseCUID(input, options);
+      return getResult(response);
+    }
+    case 'cuid2': {
+      const response = parseCUID2(input, options);
+      return getResult(response);
+    }
+    case 'nanoid': {
+      const response = parseNanoId(input, options);
+      return getResult(response);
+    }
+    case 'emoji': {
+      const response = parseEmoji(input, options);
+      return getResult(response);
+    }
+    case 'hex': {
+      const response = parseHex(input, options);
       return getResult(response);
     }
     default:
@@ -548,7 +780,13 @@ const parseObject = (object, schema) => {
     // console.log('object[key]: ', field);
 
     // clone the field if it is a pass by reference type otherwise just pass the value
-    if (Array.isArray(field)) {
+    if (field === null) {
+      console.log('null case hit in parseObject')
+      result[key] = null;
+    } else if (field === undefined) {
+      console.log('undefined case hit in parseObject')
+      result[key] = undefined;
+    } else if (Array.isArray(field)) {
       result[key] = [ ...field ];
     } else if (!['string', 'number', 'boolean'].includes(typeof field) && !Array.isArray(field)) {
       result[key] = { ...field };
