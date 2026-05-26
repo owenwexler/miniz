@@ -261,7 +261,7 @@ const returnedTypeError = {
   error: errors.typeError
 }
 
-const noError = { data: null, error: null }
+const noError = { data: null, error: null };
 
 // --------------------------------------------
 // 3.  Private functions used by the mz object
@@ -330,6 +330,14 @@ const formatError = (error) => {
   }
 }
 
+const success = (input) => {
+  return {
+    data: input,
+    error: null
+  }
+}
+
+
 const failure = (error, location, additionalArgs) => {
   const formattedError = formatError(error);
 
@@ -392,7 +400,7 @@ const parseNumber = (input, options) => {
     }
   }
 
-  return { data: input, error: null }
+  return success(input);
 }
 
 const parseString = (input, options) => {
@@ -420,7 +428,7 @@ const parseString = (input, options) => {
       if (inputStartsWith !== startsWith) {
         return {
           data: null,
-          error: errors.startsWithMismatch
+          error: errors.stringStartsWithMismatch
         }
       }
     }
@@ -430,7 +438,16 @@ const parseString = (input, options) => {
       if (inputEndsWith !== endsWith) {
         return {
           data: null,
-          error: errors.startsWithMismatch
+          error: errors.stringEndsWithMismatch
+        }
+      }
+    }
+
+    if (mustInclude) {
+      if (!input.includes(mustInclude)) {
+        return {
+          data: null,
+          error: errors.stringMustIncludeMismatch
         }
       }
     }
@@ -439,12 +456,20 @@ const parseString = (input, options) => {
       const regexMatches = input.match(regex);
 
       if (!regexMatches) {
-        return { data: null, error: errors.regexMismatch };
+        return { data: null, error: errors.stringRegexMismatch };
       }
     }
   }
 
-  return noError;
+  return success(input);
+}
+
+const parseBoolean = (input) => {
+  if (validateType(input, 'boolean').error) {
+    return returnedTypeError;
+  }
+
+  return success(input);
 }
 
 const parseEnum = (input, schemaEnum) => {
@@ -485,6 +510,10 @@ const parseField = (field) => {
     }
     case 'enum': {
       const response = parseEnum(input, options.values);
+      return getResult(response);
+    }
+    case 'boolean': {
+      const response = parseBoolean(input);
       return getResult(response);
     }
     default:

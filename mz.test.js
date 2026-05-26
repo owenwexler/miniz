@@ -183,7 +183,7 @@ describe('mz.string', () => {
 // mz.boolean
 // ---------------------------------------------------------------------------
 
-describe('mz.boolean', () => {
+describe.only('mz.boolean', () => {
   test('valid: true', () => {
     const schema = mz.schema({ b: mz.boolean() });
     ok(mz.parse({ b: true }, schema), { b: true });
