@@ -707,6 +707,212 @@ const parseDate = (date, options) => {
   return success(date);
 }
 
+const parseTimestamp = (timestamp, options) => {
+  if (validateType(timestamp, 'number').error) {
+    return returnedTypeError;
+  }
+
+  if (!Number.isInteger(timestamp) || timestamp < 0) {
+    return { data: null, error: errors.invalidTimestamp };
+  }
+
+  return success(timestamp);
+}
+
+const parseIPV4 = (ipv4, options) => {
+  if (validateType(ipv4, 'string').error) {
+    return returnedTypeError;
+  }
+
+  const parts = ipv4.split('.');
+  const allValid = parts.length === 4 && parts.every(p => /^\d+$/.test(p) && Number(p) <= 255);
+
+  if (!allValid) {
+    return { data: null, error: errors.invalidIpv4 };
+  }
+
+  return success(ipv4);
+}
+
+const parseIPV6 = (ipv6, options) => {
+  if (validateType(ipv6, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // The URL constructor authoritatively validates IPv6 when wrapped in brackets
+  try {
+    new URL(`http://[${ipv6}]`);
+  } catch {
+    return { data: null, error: errors.invalidIpv6 };
+  }
+
+  return success(ipv6);
+}
+
+
+const parseCIDR = (cidr, options) => {
+  if (validateType(cidr, 'string').error) {
+    return returnedTypeError;
+  }
+
+  const slashIdx = cidr.lastIndexOf('/');
+  if (slashIdx === -1) {
+    return { data: null, error: errors.invalidCidr };
+  }
+
+  const ip = cidr.slice(0, slashIdx);
+  const prefixStr = cidr.slice(slashIdx + 1);
+  const prefix = Number(prefixStr);
+
+  if (!/^\d+$/.test(prefixStr) || !Number.isInteger(prefix)) {
+    return { data: null, error: errors.invalidCidr };
+  }
+
+  const ipv4Parts = ip.split('.');
+  if (ipv4Parts.length === 4) {
+    const allValid = ipv4Parts.every(p => /^\d+$/.test(p) && Number(p) <= 255);
+    if (!allValid || prefix < 0 || prefix > 32) {
+      return { data: null, error: errors.invalidCidr };
+    }
+    return success(cidr);
+  }
+
+  try {
+    new URL(`http://[${ip}]`);
+  } catch {
+    return { data: null, error: errors.invalidCidr };
+  }
+
+  if (prefix < 0 || prefix > 128) {
+    return { data: null, error: errors.invalidCidr };
+  }
+
+  return success(cidr);
+}
+
+const parseMAC = (mac, options) => {
+  if (validateType(mac, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // Six pairs of hex digits separated by colons or hyphens
+  const macPattern = /^([0-9a-f]{2}[:\-]){5}[0-9a-f]{2}$/i;
+  if (!macPattern.test(mac)) {
+    return { data: null, error: errors.invalidMac };
+  }
+
+  return success(mac);
+}
+
+const parseIsoDateTime = (isoDateTime, options) => {
+  if (validateType(isoDateTime, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // Must have date + T + time + timezone; rejects bare date strings
+  const pattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
+  if (!pattern.test(isoDateTime)) {
+    return { data: null, error: errors.invalidIsoDatetime };
+  }
+
+  if (isNaN(new Date(isoDateTime).getTime())) {
+    return { data: null, error: errors.invalidIsoDatetime };
+  }
+
+  return success(isoDateTime);
+}
+
+const parseIsoDate = (isoDate, options) => {
+  if (validateType(isoDate, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // Strict YYYY-MM-DD with no time component
+  const pattern = /^\d{4}-\d{2}-\d{2}$/;
+  if (!pattern.test(isoDate)) {
+    return { data: null, error: errors.invalidIsoDate };
+  }
+
+  // Validate actual calendar values by round-tripping through Date
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) {
+    return { data: null, error: errors.invalidIsoDate };
+  }
+
+  return success(isoDate);
+}
+
+const parseIsoTime = (isoTime, options) => {
+  if (validateType(isoTime, 'string').error) {
+    return returnedTypeError;
+  }
+
+  const pattern = /^\d{2}:\d{2}:\d{2}(\.\d+)?$/;
+  if (!pattern.test(isoTime)) {
+    return { data: null, error: errors.invalidIsoTime };
+  }
+
+  const [hh, mm, ss] = isoTime.split('.')[0].split(':').map(Number);
+  if (hh > 23 || mm > 59 || ss > 59) {
+    return { data: null, error: errors.invalidIsoTime };
+  }
+
+  return success(isoTime);
+}
+
+const parseSymbol = (symbol, options) => {
+  if (validateType(symbol, 'symbol').error) {
+    return returnedTypeError;
+  }
+
+  return success(symbol);
+}
+
+const parseBase64 = (base64, options) => {
+  if (validateType(base64, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // standard alphabet + optional = padding (up to 2 chars)
+  const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+  if (!base64Pattern.test(base64)) {
+    return { data: null, error: errors.invalidBase64 };
+  }
+
+  return success(base64);
+}
+
+const parseBase64URL = (base64URL, options) => {
+  if (validateType(base64URL, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // URL-safe alphabet: - and _ instead of + and /; no padding
+  const base64urlPattern = /^[A-Za-z0-9_-]+$/;
+  if (!base64urlPattern.test(base64URL)) {
+    return { data: null, error: errors.invalidBase64url };
+  }
+
+  return success(base64URL);
+}
+
+const parseHash = (hash, options) => {
+  if (validateType(hash, 'string').error) {
+    return returnedTypeError;
+  }
+
+  const lengths = { md5: 32, sha256: 64 };
+  const expectedLength = options && lengths[options.hashType];
+  const hexPattern = expectedLength ? new RegExp(`^[0-9a-fA-F]{${expectedLength}}$`) : /^[0-9a-fA-F]+$/;
+
+  if (!hexPattern.test(hash)) {
+    return { data: null, error: errors.invalidHash };
+  }
+
+  return success(hash);
+}
+
 const createSchemaFieldObject = (schemaType, options) => {
   return options ? { schemaType, options } : { schemaType, options: null };
 }
@@ -797,6 +1003,54 @@ const parseField = (field) => {
     }
     case 'date': {
       const response = parseDate(input, options);
+      return getResult(response);
+    }
+    case 'timestamp': {
+      const response = parseTimestamp(input, options);
+      return getResult(response);
+    }
+    case 'ipv4': {
+      const response = parseIPV4(input, options);
+      return getResult(response);
+    }
+    case 'ipv6': {
+      const response = parseIPV6(input, options);
+      return getResult(response);
+    }
+    case 'cidr': {
+      const response = parseCIDR(input, options);
+      return getResult(response);
+    }
+    case 'mac': {
+      const response = parseMAC(input, options);
+      return getResult(response);
+    }
+    case 'isoDatetime': {
+      const response = parseIsoDateTime(input, options);
+      return getResult(response);
+    }
+    case 'isoDate': {
+      const response = parseIsoDate(input, options);
+      return getResult(response);
+    }
+    case 'isoTime': {
+      const response = parseIsoTime(input, options);
+      return getResult(response);
+    }
+    case 'symbol': {
+      const response = parseSymbol(input, options);
+      return getResult(response);
+    }
+    case 'base64': {
+      const response = parseBase64(input, options);
+      return getResult(response);
+    }
+    case 'base64url': {
+      const response = parseBase64URL(input, options);
+      return getResult(response);
+    }
+    case 'hash': {
+      const response = parseHash(input, options);
       return getResult(response);
     }
     default:
