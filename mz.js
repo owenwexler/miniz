@@ -1,3 +1,5 @@
+// MINI-Z VERSION 1.0
+
 // ---------------------------------------------------
 // 1. errors object - error types returned by the mz
 // object and its private internal functions
@@ -1074,22 +1076,17 @@ const parseObject = (object, schema) => {
 
     const parsedFieldResult = parseField({ schemaType: fieldSchema.schemaType, input: field, options: fieldSchema.options });
 
-    // console.log('parseField result: ', parsedFieldResult);
-
     if (parsedFieldResult.error) {
+      logError(parsedFieldResult.error);
       return {
         error: parsedFieldResult.error
       }
     }
 
-    // console.log('object[key]: ', field);
-
     // clone the field if it is a pass by reference type otherwise just pass the value
     if (field === null) {
-      console.log('null case hit in parseObject')
       result[key] = null;
     } else if (field === undefined) {
-      console.log('undefined case hit in parseObject')
       result[key] = undefined;
     } else if (Array.isArray(field)) {
       result[key] = [ ...field ];
@@ -1101,8 +1098,6 @@ const parseObject = (object, schema) => {
       result[key] = object[key];
     }
   }
-
-  // console.log('parseObject result: ', result);
 
   return result;
 }
