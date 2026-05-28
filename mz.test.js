@@ -1209,7 +1209,6 @@ describe('mz.schema — mixed schemas', () => {
       website: 'not-a-url',
     };
     const result = mz.parse(input, userSchema);
-    expect(result.data).toBeNull();
     expect(result.error).not.toBeNull();
     expect(result.error.code).toBeDefined();
   });

@@ -1172,26 +1172,211 @@ export const mz = {
 // ---------------------------------------------------
 
 /*
-Return type:
+  The primary return type for all mz.parse() calls.
+  On success: data holds the validated input object, error is undefined.
+  On failure: data is null, error holds an ErrorType object.
 
-type DataErrorReturnObject<T> {
-  data: T | null;
-  error: ErrorType | null;
-}
-*/
-/*
-  type ErrorType {
-    code: string;  // the shorthand error code, frontends should use this in error handling primarily
-    message: string; // the longer error message
-    details: string; // detailed description of the error
-    hint: string; // a hint on how to fix the error
+  type DataErrorReturnObject<T> {
+    data: T | null;
+    error: ErrorType | undefined;
   }
 */
 
 /*
-mz object type
+  The shape of every error returned by mz.parse() and its internal functions.
+  All errors in the mz.errors dictionary conform to this type.
 
-type MZ {
+  type ErrorType {
+    code: string;     // machine-readable shorthand; use this in error-handling logic
+    message: string;  // short human-readable title
+    details: string;  // fuller description of what went wrong
+    hint: string;     // actionable suggestion for fixing the input
+  }
+*/
 
-}
+/*
+  The internal descriptor object created by every mz schema-field builder
+  (e.g. mz.number(), mz.string(), mz.uuid(), etc.).
+  parseField() reads schemaType to route to the correct validator
+  and passes options through to that validator.
+
+  type SchemaFieldObject<TOptions> {
+    schemaType: SchemaType;
+    options: TOptions | null;
+  }
+*/
+
+/*
+  The union of every valid schemaType string recognised by parseField().
+
+  type SchemaType =
+    | 'number'
+    | 'string'
+    | 'boolean'
+    | 'undefined'
+    | 'null'
+    | 'symbol'
+    | 'enum'
+    | 'uuid'
+    | 'ulid'
+    | 'cuid'
+    | 'cuid2'
+    | 'guid'
+    | 'nanoid'
+    | 'email'
+    | 'url'
+    | 'e164'
+    | 'base64'
+    | 'base64url'
+    | 'hex'
+    | 'jwt'
+    | 'hash'
+    | 'date'
+    | 'timestamp'
+    | 'isoDatetime'
+    | 'isoDate'
+    | 'isoTime'
+    | 'ipv4'
+    | 'ipv6'
+    | 'cidr'
+    | 'mac'
+    | 'emoji';
+*/
+
+/*
+  Options accepted by mz.number().
+
+  type NumberOptions {
+    min?: number;  // inclusive lower bound
+    max?: number;  // inclusive upper bound
+  }
+*/
+
+/*
+  Options accepted by mz.string().
+
+  type StringOptions {
+    minLength?: number;    // inclusive minimum character count
+    maxLength?: number;    // inclusive maximum character count
+    regex?: RegExp;        // the input must match this pattern
+    startsWith?: string;   // the input must begin with this substring
+    endsWith?: string;     // the input must end with this substring
+    mustInclude?: string;  // the input must contain this substring
+  }
+*/
+
+/*
+  Options accepted by mz.email().
+
+  type EmailOptions {
+    pattern?: RegExp;  // custom regex that overrides the default email pattern
+  }
+*/
+
+/*
+  Options accepted by mz.url().
+
+  type UrlOptions {
+    protocol?: string;   // required URL protocol, e.g. 'https' (colon optional)
+    hostname?: string;   // required hostname, e.g. 'example.com'
+  }
+*/
+
+/*
+  Options accepted by mz.uuid().
+
+  type UuidOptions {
+    version?: 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'v7';
+  }
+*/
+
+/*
+  Options accepted by mz.hash().
+
+  type HashOptions {
+    hashType: 'md5' | 'sha256';
+    // md5   -> expects a 32-character lowercase hex string
+    // sha256 -> expects a 64-character lowercase hex string
+  }
+*/
+
+/*
+  The plain object passed to mz.schema().
+  Each key maps to a SchemaFieldObject produced by a schema-field builder.
+
+  type SchemaFields = {
+    [fieldName: string]: SchemaFieldObject<any>;
+  }
+*/
+
+/*
+  The internal wrapper produced by mz.schema(fields).
+  The __mzSchema sentinel lets parseObject() identify a compiled schema
+  and spread the fields directly into the lookup table.
+
+  type CompiledSchema = {
+    __mzSchema: true;
+    [fieldName: string]: SchemaFieldObject<any> | true;
+  }
+*/
+
+/*
+  The full type of the exported mz object.
+
+  type MZ {
+    // --- primitives ---
+    number:      (options?: NumberOptions) => SchemaFieldObject<NumberOptions>;
+    string:      (options?: StringOptions) => SchemaFieldObject<StringOptions>;
+    boolean:     () => SchemaFieldObject<null>;
+    undefined:   () => SchemaFieldObject<null>;
+    null:        () => SchemaFieldObject<null>;
+    symbol:      () => SchemaFieldObject<null>;
+    enum:        (values: string[]) => SchemaFieldObject<{ values: string[] }>;
+
+    // --- string-format identifiers ---
+    uuid:    (options?: UuidOptions) => SchemaFieldObject<UuidOptions>;
+    ulid:    () => SchemaFieldObject<null>;
+    cuid:    () => SchemaFieldObject<null>;
+    cuid2:   () => SchemaFieldObject<null>;
+    guid:    () => SchemaFieldObject<null>;
+    nanoid:  () => SchemaFieldObject<null>;
+
+    // --- contact / web ---
+    email:  (options?: EmailOptions) => SchemaFieldObject<EmailOptions>;
+    url:    (options?: UrlOptions)   => SchemaFieldObject<UrlOptions>;
+    e164:   () => SchemaFieldObject<null>;
+
+    // --- encoding formats ---
+    base64:    () => SchemaFieldObject<null>;
+    base64url: () => SchemaFieldObject<null>;
+    hex:       () => SchemaFieldObject<null>;
+
+    // --- security tokens / hashes ---
+    jwt:  () => SchemaFieldObject<null>;
+    hash: (options: HashOptions) => SchemaFieldObject<HashOptions>;
+
+    // --- dates and times ---
+    date:        () => SchemaFieldObject<null>;  // expects a JS Date instance
+    timestamp:   () => SchemaFieldObject<null>;  // expects a non-negative integer (Unix seconds)
+    isoDatetime: () => SchemaFieldObject<null>;  // expects YYYY-MM-DDTHH:MM:SS(Z|±HH:MM)
+    isoDate:     () => SchemaFieldObject<null>;  // expects YYYY-MM-DD
+    isoTime:     () => SchemaFieldObject<null>;  // expects HH:MM:SS or HH:MM:SS.mmm
+
+    // --- network ---
+    ipv4: () => SchemaFieldObject<null>;  // dotted-decimal, 4 octets 0-255
+    ipv6: () => SchemaFieldObject<null>;  // full or compressed IPv6
+    cidr: () => SchemaFieldObject<null>;  // IPv4/IPv6 address + /prefix
+    mac:  () => SchemaFieldObject<null>;  // six hex pairs, colon or hyphen separated
+
+    // --- special ---
+    emoji: () => SchemaFieldObject<null>;  // one or more emoji grapheme clusters
+
+    // --- schema builder ---
+    schema: (fields: SchemaFields) => CompiledSchema;
+
+    // --- core ---
+    parse:  (object: object, schema: CompiledSchema) => DataErrorReturnObject<object>;
+    errors: { [key: string]: ErrorType };
+  }
+
 */
