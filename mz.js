@@ -378,8 +378,6 @@ const validateType = (input, type) => {
 }
 
 const parseNumber = (input, options) => {
-  // console.log('parseNumber input: ', input);
-  // console.log('parseNumber options: ', options);
   if (validateType(input, 'number').error) {
     return returnedTypeError;
   }
@@ -668,6 +666,47 @@ const parseHex = (hex, options) => {
   return success(hex);
 }
 
+const parseJWT = (jwt, options) => {
+  if (validateType(jwt, 'string').error) {
+    return returnedTypeError;
+  }
+
+  const parts = jwt.split('.');
+  const base64urlPattern = /^[A-Za-z0-9_-]+$/;
+
+  if (parts.length !== 3 || parts.some(p => !base64urlPattern.test(p))) {
+    return { data: null, error: errors.invalidJwt };
+  }
+
+  return success(jwt);
+}
+
+const parseE164 = (e164, options) => {
+  if (validateType(e164, 'string').error) {
+    return returnedTypeError;
+  }
+
+  // + followed by 7–15 digits, no spaces or other characters
+  const e164Pattern = /^\+[0-9]{7,15}$/;
+  if (!e164Pattern.test(e164)) {
+    return { data: null, error: errors.invalidE164 };
+  }
+
+  return success(e164);
+}
+
+const parseDate = (date, options) => {
+  if (!(date instanceof Date)) {
+    return returnedTypeError;
+  }
+
+  if (isNaN(date.getTime())) {
+    return { data: null, error: errors.invalidDate };
+  }
+
+  return success(date);
+}
+
 const createSchemaFieldObject = (schemaType, options) => {
   return options ? { schemaType, options } : { schemaType, options: null };
 }
@@ -748,6 +787,18 @@ const parseField = (field) => {
       const response = parseHex(input, options);
       return getResult(response);
     }
+    case 'jwt': {
+      const response = parseJWT(input, options);
+      return getResult(response);
+    }
+    case 'e164': {
+      const response = parseE164(input, options);
+      return getResult(response);
+    }
+    case 'date': {
+      const response = parseDate(input, options);
+      return getResult(response);
+    }
     default:
       return { data: null, error: errors.unknownError };
   }
@@ -788,7 +839,9 @@ const parseObject = (object, schema) => {
       result[key] = undefined;
     } else if (Array.isArray(field)) {
       result[key] = [ ...field ];
-    } else if (!['string', 'number', 'boolean'].includes(typeof field) && !Array.isArray(field)) {
+    } else if (field instanceof Date) {
+      result[key] = new Date(field.getTime());
+    } else if (!['string', 'number', 'boolean', 'symbol'].includes(typeof field)) {
       result[key] = { ...field };
     } else {
       result[key] = object[key];
